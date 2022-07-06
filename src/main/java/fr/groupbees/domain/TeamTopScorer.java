@@ -1,12 +1,16 @@
 package fr.groupbees.domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
 @Builder
-@Getter
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class TeamTopScorer implements Serializable {
 
     private String scorerFirstName;

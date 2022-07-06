@@ -6,9 +6,12 @@ import fr.groupbees.domain.TeamStatsRaw;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
+import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.TupleTagList;
 
 import static org.apache.beam.sdk.values.TypeDescriptor.of;
 
@@ -34,14 +37,15 @@ public class TeamStatsTransform extends PTransform<PCollection<TeamStatsRaw>, Re
         PCollection<TeamStats> output2 = res2.output();
         PCollection<Failure> failure2 = res2.failures();
 
-        Result<PCollection<TeamStats>, Failure> res3 = output2.apply("Add team slogan", MapElements
-                .into(of(TeamStats.class))
-                .via(TeamStats::addSloganToStats)
-                .exceptionsInto(of(Failure.class))
-                .exceptionsVia(exElt -> Failure.from("Add team slogan", exElt)));
+        final TransformToTeamStatsWithSloganFn toStatsWithSloganFn = new TransformToTeamStatsWithSloganFn(
+                "Add team slogan"
+        );
+        final PCollectionTuple res3 = output2.apply(name,
+                ParDo.of(new TransformToTeamStatsWithSloganFn("Add team slogan"))
+                        .withOutputTags(toStatsWithSloganFn.getOutputTag(), TupleTagList.of(toStatsWithSloganFn.getFailuresTag())));
 
-        PCollection<TeamStats> output3 = res3.output();
-        PCollection<Failure> failure3 = res3.failures();
+        PCollection<TeamStats> output3 = res3.get(toStatsWithSloganFn.getOutputTag());
+        PCollection<Failure> failure3 = res3.get(toStatsWithSloganFn.getFailuresTag());
 
         PCollection<Failure> allFailures = PCollectionList
                 .of(failure1)
