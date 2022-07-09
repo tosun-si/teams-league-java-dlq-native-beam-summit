@@ -13,6 +13,7 @@ import static java.util.Objects.isNull;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode
+@ToString
 public class TeamStatsRaw implements Serializable {
 
     public static final String TEAM_EMPTY_ERROR_MESSAGE = "Team name cannot be null or empty";
