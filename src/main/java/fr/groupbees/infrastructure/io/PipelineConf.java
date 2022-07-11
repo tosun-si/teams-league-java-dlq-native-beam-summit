@@ -10,6 +10,7 @@ import java.io.Serializable;
 public class PipelineConf implements Serializable {
 
     private final String inputJsonFile;
+    private final String inputFileSlogans;
     private final String teamLeagueDataset;
     private final String teamStatsTable;
 }
