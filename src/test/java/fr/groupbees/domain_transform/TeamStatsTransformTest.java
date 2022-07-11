@@ -5,15 +5,17 @@ import fr.groupbees.asgarde.Failure;
 import fr.groupbees.domain.TeamStats;
 import fr.groupbees.domain.TeamStatsRaw;
 import fr.groupbees.domain.exception.TeamStatsRawValidatorException;
-import fr.groupbees.infrastructure.io.jsonfile.JsonUtil;
 import lombok.val;
+import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.testing.ValidatesRunner;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
-import org.apache.beam.sdk.transforms.WithFailures;
+import org.apache.beam.sdk.transforms.View;
+import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.PCollectionView;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -27,13 +29,11 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.apache.beam.sdk.values.TypeDescriptors.strings;
 
-/**
- * Tests of WordCount.
- */
 @RunWith(JUnit4.class)
 public class TeamStatsTransformTest implements Serializable {
 
     private static final int PSG_SCORE = 30;
+    private static final String SLOGANS = "{\"PSG\": \"Paris est magique\",\"Real\": \"Hala Madrid\"}";
 
     @Rule
     public transient TestPipeline p = TestPipeline.create();
@@ -52,8 +52,8 @@ public class TeamStatsTransformTest implements Serializable {
         PCollection<TeamStatsRaw> input = p.apply("Read team stats Raw", Create.of(inputTeamsStatsRaw));
 
         // When.
-        WithFailures.Result<PCollection<TeamStats>, Failure> resultTransform = input
-                .apply("Transform to team stats", new TeamStatsTransform());
+        Result<PCollection<TeamStats>, Failure> resultTransform = input
+                .apply("Transform to team stats", new TeamStatsTransform(getSlogansSideInput(p)));
 
         PCollection<String> output = resultTransform
                 .output()
@@ -90,8 +90,8 @@ public class TeamStatsTransformTest implements Serializable {
         PCollection<TeamStatsRaw> input = p.apply("Read team stats Raw", Create.of(inputTeamsStatsRaw));
 
         // When.
-        WithFailures.Result<PCollection<TeamStats>, Failure> resultTransform = input
-                .apply("Transform to team stats", new TeamStatsTransform());
+        Result<PCollection<TeamStats>, Failure> resultTransform = input
+                .apply("Transform to team stats", new TeamStatsTransform(getSlogansSideInput(p)));
 
         PCollection<String> output = resultTransform
                 .output()
@@ -130,16 +130,14 @@ public class TeamStatsTransformTest implements Serializable {
         p.run().waitUntilFinish();
     }
 
+    private PCollectionView<String> getSlogansSideInput(final Pipeline pipeline) {
+        return pipeline
+                .apply("String side input", Create.of(SLOGANS))
+                .apply("Create as collection view", View.asSingleton());
+    }
+
     private String logStringElement(final String element) {
         System.out.println(element);
         return element;
-    }
-
-    private <T> List<T> deserialize(final String filePath) {
-        return JsonUtil.deserializeFromResourcePath(
-                filePath,
-                new TypeReference<List<T>>() {
-                }
-        );
     }
 }

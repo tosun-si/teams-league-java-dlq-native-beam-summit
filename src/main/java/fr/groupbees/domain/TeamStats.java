@@ -1,6 +1,5 @@
 package fr.groupbees.domain;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.*;
 
 import java.io.Serializable;
@@ -13,11 +12,6 @@ import java.util.*;
 @EqualsAndHashCode
 @ToString
 public class TeamStats implements Serializable {
-
-    private static final Map<String, String> TEAM_SLOGANS = ImmutableMap.of(
-            "PSG", "Paris est magique",
-            "Real", "Hala Madrid"
-    );
 
     private String teamName;
     private int teamScore;
@@ -64,9 +58,9 @@ public class TeamStats implements Serializable {
                 .build();
     }
 
-    public TeamStats addSloganToStats() {
+    public TeamStats addSloganToStats(final Map<String, String> slogans) {
         final String slogan = Optional
-                .ofNullable(TEAM_SLOGANS.get(teamName))
+                .ofNullable(slogans.get(teamName))
                 .orElseThrow(() -> new IllegalArgumentException("No slogan for team : " + teamName));
 
         return this

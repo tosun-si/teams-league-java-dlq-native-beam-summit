@@ -8,14 +8,17 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
-import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionList;
-import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.TupleTagList;
+import org.apache.beam.sdk.values.*;
 
 import static org.apache.beam.sdk.values.TypeDescriptor.of;
 
 public class TeamStatsTransform extends PTransform<PCollection<TeamStatsRaw>, Result<PCollection<TeamStats>, Failure>> {
+
+    private final PCollectionView<String> slogansSideInput;
+
+    public TeamStatsTransform(PCollectionView<String> slogansSideInput) {
+        this.slogansSideInput = slogansSideInput;
+    }
 
     @Override
     public Result<PCollection<TeamStats>, Failure> expand(PCollection<TeamStatsRaw> input) {
@@ -38,11 +41,13 @@ public class TeamStatsTransform extends PTransform<PCollection<TeamStatsRaw>, Re
         PCollection<Failure> failure2 = res2.failures();
 
         final TransformToTeamStatsWithSloganFn toStatsWithSloganFn = new TransformToTeamStatsWithSloganFn(
-                "Add team slogan"
+                "Add team slogan",
+                slogansSideInput
         );
         final PCollectionTuple res3 = output2.apply(name,
-                ParDo.of(new TransformToTeamStatsWithSloganFn("Add team slogan"))
-                        .withOutputTags(toStatsWithSloganFn.getOutputTag(), TupleTagList.of(toStatsWithSloganFn.getFailuresTag())));
+                ParDo.of(toStatsWithSloganFn)
+                        .withOutputTags(toStatsWithSloganFn.getOutputTag(), TupleTagList.of(toStatsWithSloganFn.getFailuresTag()))
+                        .withSideInput("slogans", slogansSideInput));
 
         PCollection<TeamStats> output3 = res3.get(toStatsWithSloganFn.getOutputTag());
         PCollection<Failure> failure3 = res3.get(toStatsWithSloganFn.getFailuresTag());
